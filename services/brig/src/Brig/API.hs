@@ -11,11 +11,11 @@
 module Brig.API (runServer, parseOptions) where
 
 import Brig.App
-import Brig.AWS (sesQueue, internalQueue)
+import Brig.AWS (sesQueue)
 import Brig.API.Error
 import Brig.API.Handler
 import Brig.API.Types
-import Brig.Options hiding (sesQueue, internalQueue)
+import Brig.Options hiding (sesQueue)
 import Brig.Types
 import Brig.Types.Intra
 import Brig.Types.User (NewUserNoSSO(NewUserNoSSO))
@@ -88,13 +88,14 @@ runServer :: Opts -> IO ()
 runServer o = do
     e <- newEnv o
     s <- Server.newSettings (server e)
-    f <- Async.async $ AWS.execute (e^.awsEnv)
-                     $ AWS.listen (e^.awsEnv.sesQueue) (runAppT e . SesNotification.onEvent)
-    g <- Async.async $ AWS.execute (e^.awsEnv)
-                     $ AWS.listen (e^.awsEnv.internalQueue) (runAppT e . Internal.onEvent)
+    emailListener <- Async.async $
+        AWS.execute (e^.awsEnv) $
+        AWS.listen (e^.awsEnv.sesQueue) (runAppT e . SesNotification.onEvent)
+    internalEventListener <- Async.async $
+        Internal.listen e
     runSettingsWithShutdown s (pipeline e) 5 `finally` do
-        Async.cancel f
-        Async.cancel g
+        Async.cancel emailListener
+        Async.cancel internalEventListener
         closeEnv e
   where
     rtree      = compile (sitemap o)
