@@ -64,7 +64,7 @@ import qualified Brig.User.API.Search          as Search
 import qualified Brig.User.Auth.Cookie         as Auth
 import qualified Brig.AWS                      as AWS
 import qualified Brig.AWS.SesNotification      as SesNotification
-import qualified Brig.AWS.InternalEvent        as InternalNotification
+import qualified Brig.InternalEvent.Process    as Internal
 import qualified Brig.Types.Swagger            as Doc
 import qualified Network.Wai.Utilities.Swagger as Doc
 import qualified Data.Swagger.Build.Api        as Doc
@@ -91,7 +91,7 @@ runServer o = do
     f <- Async.async $ AWS.execute (e^.awsEnv)
                      $ AWS.listen (e^.awsEnv.sesQueue) (runAppT e . SesNotification.onEvent)
     g <- Async.async $ AWS.execute (e^.awsEnv)
-                     $ AWS.listen (e^.awsEnv.internalQueue) (runAppT e . InternalNotification.onEvent)
+                     $ AWS.listen (e^.awsEnv.internalQueue) (runAppT e . Internal.onEvent)
     runSettingsWithShutdown s (pipeline e) 5 `finally` do
         Async.cancel f
         Async.cancel g
