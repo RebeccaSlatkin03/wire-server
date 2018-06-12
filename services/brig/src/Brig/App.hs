@@ -130,6 +130,7 @@ data Env = Env
     , _gundeck       :: RPC.Request
     , _casClient     :: Cas.ClientState
     , _awsEnv        :: AWS.Env
+    , _internalQueue :: Stomp.Env
     , _metrics       :: Metrics
     , _applog        :: Logger
     , _requestId     :: RequestId
