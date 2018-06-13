@@ -18,6 +18,7 @@ module Brig.App
     , newEnv
     , closeEnv
     , awsEnv
+    , stompEnv
     , cargohold
     , galley
     , gundeck
@@ -97,6 +98,7 @@ import Util.Options
 
 import qualified Bilge                    as RPC
 import qualified Brig.AWS                 as AWS
+import qualified Brig.Stomp               as Stomp
 import qualified Brig.Options             as Opt
 import qualified Brig.TURN                as TURN
 import qualified Brig.ZAuth               as ZAuth
@@ -130,7 +132,7 @@ data Env = Env
     , _gundeck       :: RPC.Request
     , _casClient     :: Cas.ClientState
     , _awsEnv        :: AWS.Env
-    , _internalQueue :: Stomp.Env
+    , _stompEnv      :: Stomp.Env
     , _metrics       :: Metrics
     , _applog        :: Logger
     , _requestId     :: RequestId
@@ -177,12 +179,14 @@ newEnv o = do
     let sett = Opt.optSettings o
     nxm <- initCredentials (Opt.setNexmo sett)
     twl <- initCredentials (Opt.setTwilio sett)
+    stomp <- Stomp.mkEnv (Opt.stomp o) <$> initCredentials (Opt.setStomp sett)
     return $! Env
         { _cargohold     = mkEndpoint $ Opt.cargohold o
         , _galley        = mkEndpoint $ Opt.galley o
         , _gundeck       = mkEndpoint $ Opt.gundeck o
         , _casClient     = cas
         , _awsEnv        = aws
+        , _stompEnv      = stomp
         , _metrics       = mtr
         , _applog        = lgr
         , _requestId     = mempty
